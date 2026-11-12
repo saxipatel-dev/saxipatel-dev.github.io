@@ -51,7 +51,8 @@ p { margin: 0; }
 /* top bar */
 .bar { position: fixed; z-index: 20; left: 0; right: 0; top: 0;
   padding: calc(12px + env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-right, 0px)) 12px max(18px, env(safe-area-inset-left, 0px));
-  display: flex; align-items: center; gap: 16px; pointer-events: none; }
+  display: flex; align-items: center; gap: 16px; pointer-events: none;
+  background: linear-gradient(to bottom, var(--bg) 0%, rgba(6,10,18,.92) 55%, rgba(6,10,18,0) 100%); padding-bottom: 26px; }
 .bar > * { pointer-events: auto; }
 .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 700 13px/1 var(--display); letter-spacing: .05em; }
 .roundel { width: 28px; height: 28px; border-radius: 50%; border: 5px solid var(--amber); position: relative; flex: none; }
@@ -102,6 +103,7 @@ p { margin: 0; }
 button.chip { cursor: pointer; }
 button.chip[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: #0a0f1c; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.sim { margin-top: 6px; font-size: 12.5px; color: var(--muted); }
 .btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; cursor: pointer; font: 600 13px/1 var(--body); padding: 11px 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel2); transition: border-color .2s, transform .2s; }
 .btn:hover { border-color: var(--c, var(--amber)); transform: translateY(-1px); }
 .btn.go { background: var(--c, var(--amber)); border-color: var(--c, var(--amber)); color: #12100a; }
@@ -244,7 +246,7 @@ html:has(body.skimming) { scroll-snap-type: none; }
 
   const branches = [
     { color: C.teal, pts: [[1800,0],[1800,-240],[1960,-400],[2300,-400]], stops: [[1800,-200,'Rules in the API'],[1880,-320,'Audit trail'],[2080,-400,'Row-level locks'],[2300,-400,'132 tests']] },
-    { color: C.coral, pts: [[2160,420],[1900,420],[1740,580],[1740,900]], stops: [[2010,420,'3 roles · RBAC'],[1820,500,'Decided once'],[1740,720,'Keyboard board'],[1740,900,'170 tests']] },
+    { color: C.coral, pts: [[2160,420],[1900,420],[1740,580],[1740,900]], stops: [[1960,420,'3 roles · RBAC','below'],[1820,500,'Decided once'],[1740,720,'Keyboard board'],[1740,900,'170 tests']] },
     { color: C.amber, dashed: true, pts: [[3400,20],[3700,20]], stops: [] },
   ];
   const tech = [
@@ -262,17 +264,17 @@ html:has(body.skimming) { scroll-snap-type: none; }
     { idx: 0, name: 'Origin', short: 'Start', c: C.amber, cam: { z: 1 } },
     { idx: 1, name: 'Gujarat Technological University', short: 'GTU', c: C.blue, kind: 'edu', when: 'Nov 2020 – May 2024', title: 'B.E. in Computer Engineering', org: 'Gujarat Technological University · Gujarat, India · CGPA 8.94/10',
       pts: ['Studied software engineering, data structures and algorithms, object-oriented programming, database systems, computer networks and web development.', 'Built a foundation in Python, Java, JavaScript, SQL, HTML and CSS.'] },
-    { idx: 4, name: 'New Tech Infosol', short: 'New Tech', c: C.amber, kind: 'work', when: 'Jul 2023 – Aug 2023', title: 'Software Development Intern', org: 'New Tech Infosol · Gujarat, India',
+    { idx: 4, name: 'New Tech Infosol', short: 'New Tech', side: 'right', c: C.amber, kind: 'work', when: 'Jul 2023 – Aug 2023', title: 'Software Development Intern', org: 'New Tech Infosol · Gujarat, India',
       pts: ['Built and tested Android application components in Java (Android Studio), including XML-based UI layouts and navigation.', 'Worked with senior developers and fellow interns on assigned features, following the team\'s Git workflow, coding standards and code reviews.'] },
     { idx: 7, name: 'Logix Built Solutions', short: 'Logix', c: C.amber, kind: 'work', when: 'Jan 2024 – Jun 2024', title: 'Software Development Intern', org: 'Logix Built Solutions Limited · Gujarat, India',
       pts: ['Collaborated with developers, QA testers and a project lead in an Agile/Scrum team: sprint planning, daily stand-ups, sprint reviews.', 'Developed full-stack features with JavaScript, React.js and Node.js (Express): reusable UI components and RESTful API endpoints.', 'Integrated React views with Node.js REST APIs and agreed API contracts with back-end teammates.', 'Shared code through Git feature branches, pull requests and peer code reviews; verified bug fixes with QA before release.'],
       chips: ['JavaScript', 'React.js', 'Node.js', 'Express', 'Git', 'Agile/Scrum'] },
-    { idx: 10, name: 'Stevens Institute of Technology', short: 'Stevens', c: C.blue, kind: 'edu', when: 'Sep 2025 – May 2027', title: 'M.S. in Computer Science', org: 'Stevens Institute of Technology · Hoboken, NJ · GPA 3.7/4.0',
+    { idx: 10, name: 'Stevens Institute of Technology', short: 'Stevens', side: 'left', c: C.blue, kind: 'edu', when: 'Sep 2025 – May 2027', title: 'M.S. in Computer Science', org: 'Stevens Institute of Technology · Hoboken, NJ · GPA 3.7/4.0',
       pts: ['Crossed about 12,000 km from Gujarat to New Jersey for graduate school.', 'Coursework: Data Structures & Algorithms, Agile Methods for Software Development, Database Management Systems, User Experience & Programming, Data Analytics & Machine Learning.'] },
     { idx: 13, name: 'ReturnDesk', short: 'ReturnDesk', c: C.teal, kind: 'returndesk', cam: { dx: 180, dy: -200, z: .8 } },
-    { idx: 16, name: 'FlowOps', short: 'FlowOps', c: C.coral, kind: 'flowops', cam: { dx: -200, dy: 220, z: .8 } },
+    { idx: 16, name: 'FlowOps', short: 'FlowOps', side: 'right', c: C.coral, kind: 'flowops', cam: { dx: -200, dy: 220, z: .8 } },
     { idx: 19, name: 'Tech District', short: 'Stack', c: C.blue, kind: 'stack', cam: { dx: 80, dy: 300, z: .8 } },
-    { idx: 22, name: 'Console', short: 'Console', c: C.teal, kind: 'console' },
+    { idx: 22, name: 'Console', short: 'Console', side: 'left', c: C.teal, kind: 'console' },
     { idx: 25, name: 'Next stop: your team', short: 'Your team', c: C.amber, kind: 'contact', cam: { dx: 120 } },
   ];
   S.forEach(s => { s.L = cum[s.idx]; s.x = R[s.idx][0]; s.y = R[s.idx][1]; });
@@ -420,11 +422,11 @@ html:has(body.skimming) { scroll-snap-type: none; }
     }
 
     // branch stations
-    branches.forEach(b => b.stops.forEach(([x, y, name]) => {
+    branches.forEach(b => b.stops.forEach(([x, y, name, pos]) => {
       const [sx, sy] = toScreen(x, y);
       ctx.fillStyle = C.bg; ctx.strokeStyle = b.color; ctx.lineWidth = Math.max(2, 6 * z);
       ctx.beginPath(); ctx.arc(sx, sy, Math.max(4, 13 * z), 0, 6.29); ctx.fill(); ctx.stroke();
-      if (z > .34) label(name, x, y, { ox: Math.max(10, 24 * z), size: phone ? 11 : 12, color: 'rgba(234,240,248,.88)' });
+      if (z > .34) label(name, x, y, pos === 'below' ? { oy: Math.max(16, 34 * z), align: 'center', size: phone ? 11 : 12, color: 'rgba(234,240,248,.88)' } : { ox: Math.max(10, 24 * z), size: phone ? 11 : 12, color: 'rgba(234,240,248,.88)' });
     }));
 
     // tech stations
@@ -447,10 +449,16 @@ html:has(body.skimming) { scroll-snap-type: none; }
       ctx.beginPath(); ctx.arc(sx, sy, r, 0, 6.29); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
       ctx.fillStyle = C.bg; ctx.beginPath(); ctx.arc(sx, sy, r * .42, 0, 6.29); ctx.fill();
       if (i > 0) {
-        const below = s.y > 300 && s.y < 700 && i !== 7;
-        const sz = z < .3 ? 10 : (phone ? 12 : 14);
-        label(s.name, s.x, s.y, { oy: (below ? 1 : -1) * (r + 16), align: 'center', size: sz, w: 700, font: 'Unbounded, sans-serif', color: hov || here ? s.c : C.fg });
-        if (s.when && z > .3) label(s.when, s.x, s.y, { oy: (below ? 1 : -1) * (r + 34), align: 'center', size: 11, color: C.muted });
+        const sz = z < .3 ? 10 : (phone ? 12 : 14), col = hov || here ? s.c : C.fg;
+        if (s.side) {
+          const dir = s.side === 'left' ? -1 : 1, al = s.side === 'left' ? 'right' : 'left';
+          label(s.name, s.x, s.y, { ox: dir * (r + 14), oy: s.when && z > .3 ? -9 : 0, align: al, size: sz, w: 700, font: 'Unbounded, sans-serif', color: col });
+          if (s.when && z > .3) label(s.when, s.x, s.y, { ox: dir * (r + 14), oy: 11, align: al, size: 11, color: C.muted });
+        } else {
+          const below = s.y > 300 && s.y < 700 && i !== 7;
+          label(s.name, s.x, s.y, { oy: (below ? 1 : -1) * (r + 16), align: 'center', size: sz, w: 700, font: 'Unbounded, sans-serif', color: col });
+          if (s.when && z > .3) label(s.when, s.x, s.y, { oy: (below ? 1 : -1) * (r + 34), align: 'center', size: 11, color: C.muted });
+        }
       }
     });
     label('YOUR TEAM →', 3700, 20, { ox: 18, size: phone ? 12 : 14, w: 700, font: 'Unbounded, sans-serif', color: C.amber });
@@ -535,17 +543,19 @@ html:has(body.skimming) { scroll-snap-type: none; }
     } else if (s.kind === 'returndesk') {
       h = `<p class="when">Project · Nov 2026 · teal line</p><h2 class="card-h">ReturnDesk</h2><p class="org">Returns and warranty management with customer, employee and admin portals.</p>
       <div class="stats"><div><b>132</b><span>tests</span></div><div><b>11</b><span>tables</span></div><div><b>7</b><span>SQL charts</span></div></div>
-      <p class="eyebrow" style="margin-top:16px">Live model · return RD-2087</p>
+      <p class="eyebrow" style="margin-top:16px">Try it · return RD-2087</p>
+      <p class="sim">A simulation of the ReturnDesk status workflow. Nothing is saved or sent.</p>
       <div class="states" id="rstates"></div><div class="log" id="rlog" role="log"></div>
-      <div class="row"><button class="btn go" type="button" id="rNext">Advance status</button><button class="btn" type="button" id="rReject">Reject</button><button class="btn" type="button" id="rReset">New request</button></div>
+      <div class="row"><button class="btn go" type="button" id="rNext">Move to next status</button><button class="btn" type="button" id="rReject">Simulate rejection</button><button class="btn" type="button" id="rReset">Start over</button></div>
       <div class="chips"><span class="chip">React</span><span class="chip">FastAPI</span><span class="chip">PostgreSQL</span><span class="chip">SQLAlchemy</span><span class="chip">Docker</span></div>
       <div class="row"><a class="btn" href="https://github.com/saxipatel-dev/returndesk" target="_blank" rel="noopener">Read the code ↗</a></div>`;
     } else if (s.kind === 'flowops') {
       h = `<p class="when">Project · Nov 2026 · coral line</p><h2 class="card-h">FlowOps</h2><p class="org">Operations and approvals: requests, manager decisions and automatic follow-up tasks.</p>
       <div class="stats"><div><b>170</b><span>tests</span></div><div><b>3</b><span>roles</span></div><div><b>AA</b><span>WCAG 2.2</span></div></div>
-      <p class="eyebrow" style="margin-top:16px">Live model · request #1042 can be decided once</p>
+      <p class="eyebrow" style="margin-top:16px">Try it · request #1042 can be decided once</p>
+      <p class="sim">A simulation of the FlowOps backend. Nothing is saved or sent.</p>
       <div class="log" id="flog" role="log"></div>
-      <div class="row"><button class="btn go" type="button" id="fApprove">Approve</button><button class="btn" type="button" id="fAgain">Approve again</button><button class="btn" type="button" id="fRace">Two managers at once</button></div>
+      <div class="row"><button class="btn go" type="button" id="fApprove">Simulate approval</button><button class="btn" type="button" id="fAgain">Try approving twice</button><button class="btn" type="button" id="fRace">Simulate a race</button></div>
       <div class="chips"><span class="chip">React</span><span class="chip">Node.js</span><span class="chip">Express</span><span class="chip">PostgreSQL</span><span class="chip">Prisma</span><span class="chip">Playwright</span></div>
       <div class="row"><a class="btn" href="https://github.com/saxipatel-dev/flowops" target="_blank" rel="noopener">Read the code ↗</a></div>`;
     } else if (s.kind === 'stack') {
