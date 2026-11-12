@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Saxi Patel</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Saxi Patel, software developer. Ride Line S: a scroll-driven transit map of my career, projects and stack.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Concept: the whole portfolio is a transit map. Scrolling drives a train along Line S (career);
+   the camera follows it, each station opens a card, project lines branch off with feature stations,
+   the line bridges the Atlantic (Gujarat -> New Jersey), and ends at "Next stop: your team".
+   Single committed dark theme: a night-time control-room map. */
+:root {
+  --bg: #060a12;
+  --bg2: #0a101b;
+  --panel: rgba(13, 20, 33, .9);
+  --panel2: #142033;
+  --line: #1e2a40;
+  --fg: #eaf0f8;
+  --muted: #8796ad;
+  --amber: #ffb347;   /* Line S */
+  --teal: #3fd6c4;    /* ReturnDesk line */
+  --coral: #ff7a66;   /* FlowOps line */
+  --blue: #7d93ff;    /* education stations / tech district */
+  --err: #ff6b7a;
+  --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-snap-type: y proximity; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 15px/1.55 var(--body); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 6px; }
+h1, h2, h3 { margin: 0; font-family: var(--display); text-wrap: balance; }
+p { margin: 0; }
+.eyebrow { font: 500 11.5px/1.2 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+
+/* ---------- fixed stage ---------- */
+#stage { position: fixed; inset: 0; z-index: 1; }
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: default; }
+#stage::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(255,255,255,.016) 0 1px, transparent 1px 3px), radial-gradient(130% 90% at 50% 40%, transparent 55%, rgba(0,0,0,.55)); }
+#track section { height: 100vh; height: 100dvh; scroll-snap-align: start; }
+
+/* top bar */
+.bar { position: fixed; z-index: 20; left: 0; right: 0; top: 0;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-right, 0px)) 12px max(18px, env(safe-area-inset-left, 0px));
+  display: flex; align-items: center; gap: 16px; pointer-events: none; }
+.bar > * { pointer-events: auto; }
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 700 13px/1 var(--display); letter-spacing: .05em; }
+.roundel { width: 28px; height: 28px; border-radius: 50%; border: 5px solid var(--amber); position: relative; flex: none; }
+.roundel::after { content: ""; position: absolute; left: -9px; right: -9px; top: 50%; height: 6px; margin-top: -3px; background: var(--teal); border-radius: 2px; }
+.readout { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); font: 500 12px/1 var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.readout b { color: var(--fg); font-weight: 500; }
+.readout .ln { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--amber); color: #1b1203; font: 700 11px/1 var(--display); flex: none; }
+.tools { margin-left: auto; display: flex; gap: 8px; }
+.pill { cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font: 500 12.5px/1 var(--mono); color: var(--fg); text-decoration: none; white-space: nowrap; }
+.pill:hover { border-color: var(--amber); }
+.pill kbd { font: inherit; color: var(--muted); }
+
+/* bottom HUD: the line as a progress bar */
+.hud { position: fixed; z-index: 15; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; gap: 0; padding: 12px 18px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); backdrop-filter: blur(8px); }
+.hud ol { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; position: relative; }
+.hud ol::before { content: ""; position: absolute; left: 7px; right: 7px; top: 50%; height: 4px; margin-top: -2px; background: var(--line); border-radius: 2px; }
+.hud .fill { position: absolute; left: 7px; top: 50%; height: 4px; margin-top: -2px; background: var(--amber); border-radius: 2px; width: 0; }
+.hud li { position: relative; padding: 0 9px; }
+.hud li:first-of-type { padding-left: 0; } .hud li:last-child { padding-right: 0; }
+.hud li button { display: block; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--muted); background: var(--bg); cursor: pointer; padding: 0; position: relative; z-index: 1; }
+.hud li button.passed { border-color: var(--amber); }
+.hud li button.here { border-color: var(--amber); background: var(--amber); box-shadow: 0 0 0 5px rgba(255,179,71,.2); }
+.hud li button:hover::after, .hud li button:focus-visible::after { content: attr(data-name); position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 500 11px/1 var(--mono); padding: 6px 8px; border-radius: 6px; background: var(--panel2); border: 1px solid var(--line); color: var(--fg); }
+.clock { position: fixed; z-index: 15; left: max(18px, env(safe-area-inset-left, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); font: 500 12px/1.5 var(--mono); color: var(--muted); }
+.clock b { color: var(--fg); font-weight: 500; }
+.clock i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--teal); margin-right: 8px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(63,214,196,.5); } 50% { box-shadow: 0 0 0 7px rgba(63,214,196,0); } }
+#mini { position: fixed; z-index: 15; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); width: 200px; height: 96px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+
+/* station card */
+#card { position: fixed; z-index: 10; right: max(22px, env(safe-area-inset-right, 0px)); top: 78px; bottom: 130px; width: min(460px, 42vw);
+  display: flex; flex-direction: column; justify-content: center; pointer-events: none; transition: opacity .25s, transform .25s; }
+#card .in { pointer-events: auto; max-height: 100%; overflow-y: auto; padding: 26px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); backdrop-filter: blur(10px); box-shadow: 0 30px 80px -30px rgba(0,0,0,.7); border-top: 5px solid var(--c, var(--amber)); scrollbar-width: thin; }
+#card.off { opacity: 0; transform: translateX(16px); }
+#card.off .in { pointer-events: none; }
+.when { font: 700 12px/1 var(--mono); letter-spacing: .1em; color: var(--c); text-transform: uppercase; }
+.card-h { font-size: 26px; font-weight: 700; line-height: 1.1; margin-top: 10px; }
+.org { color: var(--muted); margin-top: 6px; }
+.card ul { margin: 14px 0 0; padding-left: 18px; display: grid; gap: 7px; }
+.card li::marker { color: var(--c); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-top: 16px; }
+.stats div { background: var(--panel2); padding: 11px; }
+.stats b { display: block; font: 800 22px/1 var(--display); color: var(--c); font-variant-numeric: tabular-nums; }
+.stats span { font-size: 12px; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+.chip { font: 500 11.5px/1 var(--mono); padding: 7px 9px; border-radius: 6px; border: 1px solid var(--line); background: transparent; }
+button.chip { cursor: pointer; }
+button.chip[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: #0a0f1c; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; cursor: pointer; font: 600 13px/1 var(--body); padding: 11px 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel2); transition: border-color .2s, transform .2s; }
+.btn:hover { border-color: var(--c, var(--amber)); transform: translateY(-1px); }
+.btn.go { background: var(--c, var(--amber)); border-color: var(--c, var(--amber)); color: #12100a; }
+.btn:disabled { opacity: .45; cursor: default; transform: none; }
+.log { margin-top: 12px; padding: 12px; min-height: 150px; max-height: 210px; overflow: auto; border: 1px solid var(--line); border-radius: 9px; background: #04070c; font: 400 11.5px/1.7 var(--mono); }
+.log p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.k { color: var(--amber); } .g { color: var(--teal); } .r { color: var(--err); } .m { color: var(--muted); }
+.states { display: flex; margin-top: 14px; }
+.state { flex: 1; display: grid; justify-items: center; gap: 6px; position: relative; }
+.state::before { content: ""; position: absolute; top: 7px; left: -50%; right: 50%; height: 3px; background: var(--line); }
+.state:first-child::before { display: none; }
+.state.done::before, .state.cur::before { background: var(--teal); }
+.state i { width: 17px; height: 17px; border-radius: 50%; border: 4px solid var(--line); background: var(--bg2); position: relative; z-index: 1; }
+.state.done i { border-color: var(--teal); background: var(--teal); }
+.state.cur i { border-color: var(--teal); box-shadow: 0 0 0 5px rgba(63,214,196,.2); }
+.state.rej i { border-color: var(--err); background: var(--err); }
+.state span { font: 500 9.5px/1.2 var(--mono); color: var(--muted); text-align: center; }
+.state.cur span, .state.done span { color: var(--fg); }
+.used { list-style: none; padding: 0 !important; display: grid; gap: 7px !important; }
+.used li { display: flex; gap: 10px; align-items: center; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2); font-size: 14px; }
+.used li i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.used li span { margin-left: auto; color: var(--muted); font-size: 12px; text-align: right; }
+.term { margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #04070c; }
+.screen { height: 230px; overflow-y: auto; padding: 12px; font: 400 12.5px/1.65 var(--mono); }
+.screen p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.screen .cmd::before { content: "$ "; color: var(--teal); }
+.prompt { display: flex; gap: 8px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); font: 400 13px/1 var(--mono); }
+.prompt span { color: var(--teal); }
+.prompt input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: var(--fg); font: inherit; caret-color: var(--amber); }
+.reach { display: grid; gap: 8px; margin-top: 16px; }
+.reach > * { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel2); text-decoration: none; min-width: 0; }
+.reach .eyebrow { width: 70px; flex: none; }
+.reach .v { font: 500 13px/1.3 var(--mono); overflow-wrap: anywhere; min-width: 0; }
+.reach button { margin-left: auto; cursor: pointer; padding: 7px 9px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg2); font: 600 11.5px/1 var(--body); }
+
+/* hero overlay (station 0) */
+#hero { position: fixed; z-index: 10; left: max(28px, env(safe-area-inset-left, 0px)); top: 50%; transform: translateY(-50%); width: min(640px, 56vw); transition: opacity .3s, transform .3s; }
+#hero.off { opacity: 0; transform: translateY(-46%); pointer-events: none; }
+#hero::before { content: ""; position: absolute; inset: -140px -200px -140px -400px; z-index: -1; background: radial-gradient(closest-side, rgba(6,10,18,.92), rgba(6,10,18,0)); }
+.kicker { display: flex; flex-wrap: wrap; gap: 8px; }
+.kicker span { font: 500 12px/1 var(--mono); padding: 8px 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--muted); }
+.kicker b { color: var(--fg); font-weight: 500; }
+.name { margin-top: 22px; font-weight: 800; font-size: clamp(56px, 9vw, 132px); line-height: .86; letter-spacing: -.025em; text-transform: uppercase; }
+.name span { display: block; }
+.name .hl { color: var(--amber); text-shadow: 0 0 50px rgba(255,179,71,.35); }
+.tag { margin-top: 22px; font-size: clamp(17px, 1.6vw, 20px); color: var(--muted); max-width: 34ch; line-height: 1.5; }
+.tag b { color: var(--fg); font-weight: 600; }
+.board { margin-top: 26px; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 12px 16px; border-radius: 10px; background: #111; border: 1px solid #2a2a2a; font: 700 13px/1 var(--mono); color: var(--amber); letter-spacing: .08em; text-transform: uppercase; }
+.board .blink { animation: blink 1.2s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+#tip { position: fixed; z-index: 12; pointer-events: none; padding: 8px 10px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); font: 500 12px/1.4 var(--mono); max-width: 240px; transform: translate(-50%, calc(-100% - 22px)); }
+#tip b { display: block; color: var(--amber); }
+
+/* ---------- skim view ---------- */
+#skim { position: relative; z-index: 30; min-height: 100vh; background: var(--bg); padding-block: 90px 60px; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+#skim .w { max-width: 860px; margin: 0 auto; display: grid; gap: 34px; }
+#skim h1 { font-size: clamp(36px, 6vw, 64px); text-transform: uppercase; line-height: .95; }
+#skim h2 { font-size: 13px; font-family: var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--amber); font-weight: 700; margin-bottom: 12px; }
+#skim h3 { font: 600 18px/1.3 var(--body); }
+#skim .item { padding-block: 14px; border-top: 1px solid var(--line); }
+#skim .meta { color: var(--muted); font-size: 14px; }
+#skim ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 5px; }
+body.skimming #stage, body.skimming #track, body.skimming .hud, body.skimming .clock, body.skimming #mini, body.skimming #card, body.skimming #hero { display: none; }
+body.skimming .readout { display: none; }
+html:has(body.skimming) { scroll-snap-type: none; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---------- phone ---------- */
+@media (max-width: 820px) {
+  .readout { display: none; }
+  .pill.hide-s { display: none; }
+  #mini, .clock { display: none; }
+  .hud { bottom: auto; top: calc(60px + env(safe-area-inset-top, 0px)); padding: 9px 14px; }
+  .hud li { padding: 0 6px; }
+  .hud li button { width: 12px; height: 12px; }
+  #card { left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); width: auto; top: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); height: 54vh; height: 54dvh; justify-content: flex-end; }
+  #card .in { padding: 18px; }
+  #card.off { transform: translateY(16px); }
+  .card-h { font-size: 21px; }
+  #hero { left: max(18px, env(safe-area-inset-left, 0px)); right: max(18px, env(safe-area-inset-right, 0px)); width: auto; top: auto; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: none; }
+  #hero.off { transform: translateY(10px); }
+  #hero::before { inset: -120px -40px -40px -40px; background: linear-gradient(to top, rgba(6,10,18,.96) 55%, rgba(6,10,18,0)); }
+  .tag { font-size: 16px; }
+  .board { font-size: 11px; gap: 10px; }
+}
+</style>
+
+<header class="bar">
+  <a class="logo" href="#s0" aria-label="Saxi Patel, back to the first station"><span class="roundel" aria-hidden="true"></span>SAXI PATEL</a>
+  <div class="readout" id="readout" aria-live="polite"><span class="ln">S</span><span id="ro">Origin</span></div>
+  <div class="tools">
+    <button class="pill hide-s" type="button" id="toTerm"><kbd>/</kbd> terminal</button>
+    <button class="pill" type="button" id="skimBtn" aria-pressed="false">Skim view</button>
+  </div>
+</header>
+
+<div id="stage">
+  <canvas id="cv" aria-label="Transit map of Saxi Patel's career. Scroll to move the train between stations."></canvas>
+</div>
+<div id="tip" hidden></div>
+
+<div id="hero">
+  <div class="kicker"><span><b>Software Developer</b> · Full Stack</span><span>Open to roles · <b>Jun 2027</b></span></div>
+  <h1 class="name"><span>Saxi</span><span class="hl">Patel</span></h1>
+  <p class="tag">I build <b>full-stack systems that stay correct</b> when real people use them at once. React, Node.js, Python, PostgreSQL.</p>
+  <div class="board" aria-label="Departure board: Line S to your team, now boarding"><span>Line S</span><span>→ Your team</span><span class="blink">● Boarding</span></div>
+  <p class="eyebrow" style="margin-top:22px">Scroll to ride · or tap the stations</p>
+</div>
+
+<aside id="card" class="off" aria-live="polite"><div class="in card" id="cardIn"></div></aside>
+
+<nav class="hud" aria-label="Stations on Line S"><ol id="hudList"><span class="fill" id="fill"></span></ol></nav>
+<div class="clock"><i></i>NYC <b id="clk">--:--</b> · open to roles</div>
+<canvas id="mini" aria-hidden="true"></canvas>
+
+<main id="track" aria-hidden="true"></main>
+
+<div id="skim" hidden></div>
+
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const C = { amber: '#ffb347', teal: '#3fd6c4', coral: '#ff7a66', blue: '#7d93ff', fg: '#eaf0f8', muted: '#8796ad', bg: '#060a12' };
+
+  /* ================= MAP GEOMETRY (world units, octilinear like a real transit map) ================= */
+  const R = [[0,0],[360,0],[520,0],[680,160],[680,360],[680,480],[800,600],[1040,600],[1240,600],[1400,440],[1400,200],[1400,80],[1480,0],[1800,0],[2000,0],[2160,160],[2160,420],[2160,560],[2300,700],[2600,700],[2800,700],[2960,540],[2960,300],[2960,160],[3100,20],[3400,20]];
+  const segLen = [], cum = [0];
+  for (let i = 1; i < R.length; i++) { const l = Math.hypot(R[i][0] - R[i-1][0], R[i][1] - R[i-1][1]); segLen.push(l); cum.push(cum[i-1] + l); }
+  const TOTAL = cum[cum.length - 1];
+  function along(s) {
+    s = Math.max(0, Math.min(TOTAL, s));
+    let i = 1; while (i < cum.length - 1 && cum[i] < s) i++;
+    const a = R[i-1], b = R[i], t = segLen[i-1] ? (s - cum[i-1]) / segLen[i-1] : 0;
+    return { x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, ang: Math.atan2(b[1] - a[1], b[0] - a[0]) };
+  }
+  const WATER = { x0: 1110, x1: 1290 };
+
+  const branches = [
+    { color: C.teal, pts: [[1800,0],[1800,-240],[1960,-400],[2300,-400]], stops: [[1800,-200,'Rules in the API'],[1880,-320,'Audit trail'],[2080,-400,'Row-level locks'],[2300,-400,'132 tests']] },
+    { color: C.coral, pts: [[2160,420],[1900,420],[1740,580],[1740,900]], stops: [[2010,420,'3 roles · RBAC'],[1820,500,'Decided once'],[1740,720,'Keyboard board'],[1740,900,'170 tests']] },
+    { color: C.amber, dashed: true, pts: [[3400,20],[3700,20]], stops: [] },
+  ];
+  const tech = [
+    ['Browser',2380,960,'Where every request starts'],['React',2480,860,'FlowOps · ReturnDesk · Logix'],['Vite',2400,1090,'FlowOps · ReturnDesk'],['Tailwind CSS',2540,1000,'FlowOps · ReturnDesk'],
+    ['Express',2680,850,'FlowOps · Logix'],['FastAPI',2690,1030,'ReturnDesk'],['Prisma',2830,900,'FlowOps'],['SQLAlchemy',2840,1070,'ReturnDesk'],
+    ['PostgreSQL',2990,985,'FlowOps · ReturnDesk'],['Docker',2730,1190,'ReturnDesk · FlowOps'],['GitHub Actions',2950,1200,'CI for both projects'],['Playwright',2520,1200,'End-to-end tests, both projects'],
+  ].map(([id, x, y, u]) => ({ id, x, y, u }));
+  const T = Object.fromEntries(tech.map(t => [t.id, t]));
+  const tEdges = [['Browser','React'],['Vite','React'],['Tailwind CSS','React'],['React','Express'],['React','FastAPI'],['Express','Prisma'],['FastAPI','SQLAlchemy'],['Prisma','PostgreSQL'],['SQLAlchemy','PostgreSQL'],['Docker','FastAPI'],['Docker','PostgreSQL'],['GitHub Actions','Docker'],['Playwright','Browser'],['GitHub Actions','Playwright']];
+  const tRoutes = [['Browser','React','Express','Prisma','PostgreSQL'],['Browser','React','FastAPI','SQLAlchemy','PostgreSQL'],['GitHub Actions','Playwright','Browser'],['GitHub Actions','Docker','PostgreSQL']];
+  const tColors = [C.coral, C.teal, C.blue, C.blue];
+
+  /* ================= STATIONS + CONTENT ================= */
+  const S = [
+    { idx: 0, name: 'Origin', short: 'Start', c: C.amber, cam: { z: 1 } },
+    { idx: 1, name: 'Gujarat Technological University', short: 'GTU', c: C.blue, kind: 'edu', when: 'Nov 2020 – May 2024', title: 'B.E. in Computer Engineering', org: 'Gujarat Technological University · Gujarat, India · CGPA 8.94/10',
+      pts: ['Studied software engineering, data structures and algorithms, object-oriented programming, database systems, computer networks and web development.', 'Built a foundation in Python, Java, JavaScript, SQL, HTML and CSS.'] },
+    { idx: 4, name: 'New Tech Infosol', short: 'New Tech', c: C.amber, kind: 'work', when: 'Jul 2023 – Aug 2023', title: 'Software Development Intern', org: 'New Tech Infosol · Gujarat, India',
+      pts: ['Built and tested Android application components in Java (Android Studio), including XML-based UI layouts and navigation.', 'Worked with senior developers and fellow interns on assigned features, following the team\'s Git workflow, coding standards and code reviews.'] },
+    { idx: 7, name: 'Logix Built Solutions', short: 'Logix', c: C.amber, kind: 'work', when: 'Jan 2024 – Jun 2024', title: 'Software Development Intern', org: 'Logix Built Solutions Limited · Gujarat, India',
+      pts: ['Collaborated with developers, QA testers and a project lead in an Agile/Scrum team: sprint planning, daily stand-ups, sprint reviews.', 'Developed full-stack features with JavaScript, React.js and Node.js (Express): reusable UI components and RESTful API endpoints.', 'Integrated React views with Node.js REST APIs and agreed API contracts with back-end teammates.', 'Shared code through Git feature branches, pull requests and peer code reviews; verified bug fixes with QA before release.'],
+      chips: ['JavaScript', 'React.js', 'Node.js', 'Express', 'Git', 'Agile/Scrum'] },
+    { idx: 10, name: 'Stevens Institute of Technology', short: 'Stevens', c: C.blue, kind: 'edu', when: 'Sep 2025 – May 2027', title: 'M.S. in Computer Science', org: 'Stevens Institute of Technology · Hoboken, NJ · GPA 3.7/4.0',
+      pts: ['Crossed about 12,000 km from Gujarat to New Jersey for graduate school.', 'Coursework: Data Structures & Algorithms, Agile Methods for Software Development, Database Management Systems, User Experience & Programming, Data Analytics & Machine Learning.'] },
+    { idx: 13, name: 'ReturnDesk', short: 'ReturnDesk', c: C.teal, kind: 'returndesk', cam: { dx: 180, dy: -200, z: .8 } },
+    { idx: 16, name: 'FlowOps', short: 'FlowOps', c: C.coral, kind: 'flowops', cam: { dx: -200, dy: 220, z: .8 } },
+    { idx: 19, name: 'Tech District', short: 'Stack', c: C.blue, kind: 'stack', cam: { dx: 80, dy: 300, z: .8 } },
+    { idx: 22, name: 'Console', short: 'Console', c: C.teal, kind: 'console' },
+    { idx: 25, name: 'Next stop: your team', short: 'Your team', c: C.amber, kind: 'contact', cam: { dx: 120 } },
+  ];
+  S.forEach(s => { s.L = cum[s.idx]; s.x = R[s.idx][0]; s.y = R[s.idx][1]; });
+  const N = S.length;
+
+  /* ================= CANVAS ================= */
+  const cv = $('#cv'), ctx = cv.getContext('2d');
+  const mini = $('#mini'), mctx = mini.getContext('2d');
+  let W = 0, H = 0, dpr = 1, phone = false;
+  function size() {
+    dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; phone = W <= 820;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    const mr = mini.getBoundingClientRect(); mini.width = Math.max(1, Math.round(mr.width * dpr)); mini.height = Math.max(1, Math.round(mr.height * dpr));
+  }
+  const BOUNDS = { x0: -160, x1: 3780, y0: -560, y1: 1290 };
+  const overviewZ = () => phone ? W / 2700 : Math.min((W * .62) / (BOUNDS.x1 - BOUNDS.x0), (H - 110) / (BOUNDS.y1 - BOUNDS.y0));
+  const rideZ = () => phone ? Math.min(W / 620, H / 1000) : Math.min(W / 1500, H / 900) * 1.05;
+  const ease = (t) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  let P = 0;  // continuous station position 0..N-1, driven by scroll
+  function rideState(p) {
+    const i = Math.min(N - 1, Math.floor(p)), f = p - i;
+    const dwell = .38;
+    let s, u;
+    if (i >= N - 1 || f < dwell) { s = S[i].L; u = 0; }
+    else { u = ease((f - dwell) / (1 - dwell)); s = lerp(S[i].L, S[i + 1].L, u); }
+    return { i, f, s, u };
+  }
+
+  const cam = { x: 1700, y: 360, z: .3 };
+  function camTarget(st) {
+    const a = S[st.i], b = S[Math.min(N - 1, st.i + 1)];
+    const ca = a.cam || {}, cb = b.cam || {};
+    const pos = along(st.s);
+    let z = rideZ() * lerp(ca.z ?? 1, cb.z ?? 1, st.u);
+    const dx = lerp(ca.dx || 0, cb.dx || 0, st.u), dy = lerp(ca.dy || 0, cb.dy || 0, st.u);
+    let x = pos.x + dx, y = pos.y + dy;
+    if (phone) y += (H * .24) / z; else x += (Math.min(460, W * .42) / 2 + 10) / z;
+    if (P < 1) {
+      const k = ease(Math.min(1, P / .9)), oz = overviewZ();
+      const ox = phone ? 1330 : (BOUNDS.x0 + BOUNDS.x1) / 2 - (W * .15) / oz, oy = phone ? 260 + (H * .24) / oz : (BOUNDS.y0 + BOUNDS.y1) / 2 - 10 / oz;
+      z = lerp(oz, z, k); x = lerp(ox, x, k); y = lerp(oy, y, k);
+    }
+    return { x, y, z };
+  }
+  const toScreen = (x, y) => [(x - cam.x) * cam.z + W / 2, (y - cam.y) * cam.z + H / 2];
+  const toWorld = (sx, sy) => [(sx - W / 2) / cam.z + cam.x, (sy - H / 2) / cam.z + cam.y];
+
+  const packets = [];
+  const polyLen = (pts) => { let l = 0; for (let i = 1; i < pts.length; i++) l += Math.hypot(pts[i][0] - pts[i-1][0], pts[i][1] - pts[i-1][1]); return l; };
+  const polyAt = (pts, s) => { for (let i = 1; i < pts.length; i++) { const l = Math.hypot(pts[i][0] - pts[i-1][0], pts[i][1] - pts[i-1][1]); if (s <= l) { const t = l ? s / l : 0; return [pts[i-1][0] + (pts[i][0] - pts[i-1][0]) * t, pts[i-1][1] + (pts[i][1] - pts[i-1][1]) * t]; } s -= l; } return pts[pts.length - 1]; };
+  const lanes = [
+    ...branches.filter(b => !b.dashed).map(b => ({ pts: b.pts, color: b.color })),
+    ...tRoutes.map((r, i) => ({ pts: r.map(id => [T[id].x, T[id].y]), color: tColors[i] })),
+    { pts: R, color: C.amber, main: true },
+  ].map(l => ({ ...l, len: polyLen(l.pts) }));
+  function spawn(seed) {
+    const l = lanes[Math.floor(Math.random() * lanes.length)];
+    packets.push({ l, s: seed ? Math.random() * l.len : 0, v: (l.main ? 2.2 : 1.6) + Math.random() * 1.2 });
+  }
+  for (let i = 0; i < 26; i++) spawn(true);
+
+  let hoverTech = null, pickedTech = 'React', hoverStation = null;
+
+  function path(pts) { ctx.beginPath(); pts.forEach(([x, y], i) => { const [a, b] = toScreen(x, y); i ? ctx.lineTo(a, b) : ctx.moveTo(a, b); }); }
+  function label(text, x, y, o = {}) {
+    const [sx, sy] = toScreen(x, y);
+    ctx.font = `${o.w || 500} ${o.size || 12}px ${o.font || '"JetBrains Mono", monospace'}`;
+    ctx.textAlign = o.align || 'left'; ctx.textBaseline = 'middle';
+    if (o.halo !== false) { ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(6,10,18,.85)'; ctx.strokeText(text, sx + (o.ox || 0), sy + (o.oy || 0)); }
+    ctx.fillStyle = o.color || C.fg; ctx.fillText(text, sx + (o.ox || 0), sy + (o.oy || 0));
+  }
+
+  function draw(now, st) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+    const z = cam.z;
+
+    // city-block grid
+    const step = 120; const [wx0, wy0] = toWorld(0, 0), [wx1, wy1] = toWorld(W, H);
+    ctx.strokeStyle = 'rgba(125,147,255,.045)'; ctx.lineWidth = 1; ctx.beginPath();
+    for (let x = Math.floor(wx0 / step) * step; x < wx1; x += step) { const [sx] = toScreen(x, 0); ctx.moveTo(sx, 0); ctx.lineTo(sx, H); }
+    for (let y = Math.floor(wy0 / step) * step; y < wy1; y += step) { const [, sy] = toScreen(0, y); ctx.moveTo(0, sy); ctx.lineTo(W, sy); }
+    ctx.stroke();
+
+    label('GUJARAT · INDIA', 520, -330, { size: Math.max(14, 54 * z), w: 800, font: 'Unbounded, sans-serif', color: 'rgba(135,150,173,.10)', align: 'center', halo: false });
+    label('NEW JERSEY · USA', 2420, -620, { size: Math.max(14, 54 * z), w: 800, font: 'Unbounded, sans-serif', color: 'rgba(135,150,173,.10)', align: 'center', halo: false });
+
+    // the Atlantic
+    const [ax0] = toScreen(WATER.x0, 0), [ax1] = toScreen(WATER.x1, 0);
+    const wg = ctx.createLinearGradient(ax0, 0, ax1, 0); wg.addColorStop(0, '#081426'); wg.addColorStop(.5, '#0d2240'); wg.addColorStop(1, '#081426');
+    ctx.fillStyle = wg; ctx.fillRect(ax0, 0, ax1 - ax0, H);
+    ctx.strokeStyle = 'rgba(125,180,255,.12)'; ctx.lineWidth = 1;
+    const tt = reduce ? 0 : now / 900;
+    for (let yy = Math.floor(wy0 / 46) * 46; yy < wy1; yy += 46) {
+      ctx.beginPath();
+      for (let xx = WATER.x0 + 10; xx <= WATER.x1 - 10; xx += 8) { const [sx, sy] = toScreen(xx, yy + Math.sin(xx / 22 + tt + yy) * 5); xx === WATER.x0 + 10 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy); }
+      ctx.stroke();
+    }
+    ctx.save(); const [rx, ry] = toScreen((WATER.x0 + WATER.x1) / 2, 960); ctx.translate(rx, ry); ctx.rotate(-Math.PI / 2);
+    ctx.font = `700 ${Math.max(10, 20 * z)}px "JetBrains Mono", monospace`; ctx.fillStyle = 'rgba(160,200,255,.38)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('ATLANTIC OCEAN  ·  ≈12,000 KM', 0, 0); ctx.restore();
+
+    const lw = Math.max(3, 16 * z);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+    // tech district
+    tEdges.forEach(([a, b]) => {
+      const hl = [a, b].includes(hoverTech) || ([a, b].includes(pickedTech) && st.i === 7);
+      ctx.strokeStyle = hl ? 'rgba(125,147,255,.95)' : 'rgba(125,147,255,.28)'; ctx.lineWidth = Math.max(1.5, (hl ? 6 : 4) * z);
+      path([[T[a].x, T[a].y], [T[b].x, T[b].y]]); ctx.stroke();
+    });
+    ctx.strokeStyle = 'rgba(125,147,255,.45)'; ctx.lineWidth = Math.max(2, 7 * z); ctx.setLineDash([10 * z + 2, 10 * z + 2]);
+    path([[2600,700],[2600,780],[2480,860]]); ctx.stroke(); ctx.setLineDash([]);
+
+    // branch lines
+    branches.forEach(b => {
+      ctx.strokeStyle = b.color; ctx.lineWidth = lw * (b.dashed ? .55 : .8);
+      if (b.dashed) ctx.setLineDash([lw * 1.2, lw * 1.1]);
+      ctx.globalAlpha = b.dashed ? .7 : .95; path(b.pts); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+    });
+
+    // main line: glow, untravelled, travelled
+    ctx.strokeStyle = 'rgba(255,179,71,.16)'; ctx.lineWidth = lw * 2.6; path(R); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,179,71,.42)'; ctx.lineWidth = lw; path(R); ctx.stroke();
+    const done = []; for (let i = 0; i < R.length && cum[i] <= st.s; i++) done.push(R[i]); const tp = along(st.s); done.push([tp.x, tp.y]);
+    ctx.strokeStyle = C.amber; ctx.lineWidth = lw; path(done); ctx.stroke();
+    // bridge over the ocean
+    ctx.save(); ctx.beginPath(); ctx.rect(ax0, 0, ax1 - ax0, H); ctx.clip();
+    ctx.strokeStyle = '#0d2240'; ctx.lineWidth = lw * 2.8; path(R); ctx.stroke();
+    ctx.strokeStyle = C.amber; ctx.lineWidth = lw * .45; ctx.setLineDash([lw * .9, lw * .7]); path(R); ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+
+    // packets
+    for (let i = packets.length - 1; i >= 0; i--) {
+      const k = packets[i]; if (!reduce) k.s += k.v * 1.6;
+      if (k.s > k.l.len) { packets.splice(i, 1); spawn(); continue; }
+      const [px, py] = polyAt(k.l.pts, k.s); const [sx, sy] = toScreen(px, py);
+      if (sx < -30 || sy < -30 || sx > W + 30 || sy > H + 30) continue;
+      const r = Math.max(5, 22 * z);
+      const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, r); g.addColorStop(0, k.l.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, r, 0, 6.29); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(sx, sy, Math.max(1.4, 3 * z), 0, 6.29); ctx.fill();
+    }
+
+    // branch stations
+    branches.forEach(b => b.stops.forEach(([x, y, name]) => {
+      const [sx, sy] = toScreen(x, y);
+      ctx.fillStyle = C.bg; ctx.strokeStyle = b.color; ctx.lineWidth = Math.max(2, 6 * z);
+      ctx.beginPath(); ctx.arc(sx, sy, Math.max(4, 13 * z), 0, 6.29); ctx.fill(); ctx.stroke();
+      if (z > .34) label(name, x, y, { ox: Math.max(10, 24 * z), size: phone ? 11 : 12, color: 'rgba(234,240,248,.88)' });
+    }));
+
+    // tech stations
+    tech.forEach(t => {
+      const [sx, sy] = toScreen(t.x, t.y), hl = t.id === hoverTech || (t.id === pickedTech && st.i === 7);
+      const big = t.id === 'PostgreSQL' || t.id === 'Browser';
+      ctx.fillStyle = C.bg; ctx.strokeStyle = hl ? C.amber : (big ? C.fg : 'rgba(234,240,248,.75)'); ctx.lineWidth = Math.max(2, (big ? 7 : 5) * z);
+      ctx.beginPath(); ctx.arc(sx, sy, Math.max(4, (big ? 16 : 11) * z), 0, 6.29); ctx.fill(); ctx.stroke();
+      if (z > .34 || hl) label(t.id, t.x, t.y, { ox: Math.max(10, 22 * z), size: phone ? 11 : 12, color: hl ? C.amber : 'rgba(234,240,248,.86)' });
+    });
+
+    // main stations
+    S.forEach((s, i) => {
+      const [sx, sy] = toScreen(s.x, s.y);
+      const here = i === st.i && st.u === 0, hov = hoverStation === i;
+      const r = Math.max(7, 26 * z) * (here ? 1.15 : 1);
+      if (here) { ctx.fillStyle = 'rgba(255,179,71,.12)'; ctx.beginPath(); ctx.arc(sx, sy, r * 2.2, 0, 6.29); ctx.fill(); }
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = s.c; ctx.lineWidth = Math.max(3, 9 * z);
+      if (s.kind === 'contact') ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, 6.29); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = C.bg; ctx.beginPath(); ctx.arc(sx, sy, r * .42, 0, 6.29); ctx.fill();
+      if (i > 0) {
+        const below = s.y > 300 && s.y < 700 && i !== 7;
+        const sz = z < .3 ? 10 : (phone ? 12 : 14);
+        label(s.name, s.x, s.y, { oy: (below ? 1 : -1) * (r + 16), align: 'center', size: sz, w: 700, font: 'Unbounded, sans-serif', color: hov || here ? s.c : C.fg });
+        if (s.when && z > .3) label(s.when, s.x, s.y, { oy: (below ? 1 : -1) * (r + 34), align: 'center', size: 11, color: C.muted });
+      }
+    });
+    label('YOUR TEAM →', 3700, 20, { ox: 18, size: phone ? 12 : 14, w: 700, font: 'Unbounded, sans-serif', color: C.amber });
+
+    // the train
+    const tr = along(st.s);
+    const [tx, ty] = toScreen(tr.x, tr.y);
+    const tl = Math.max(26, 90 * z), th = Math.max(10, 26 * z);
+    const glow = ctx.createRadialGradient(tx, ty, 0, tx, ty, tl * 1.6); glow.addColorStop(0, 'rgba(255,179,71,.55)'); glow.addColorStop(1, 'rgba(255,179,71,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(tx, ty, tl * 1.6, 0, 6.29); ctx.fill();
+    ctx.save(); ctx.translate(tx, ty); ctx.rotate(tr.ang);
+    ctx.fillStyle = '#fff6e8'; ctx.strokeStyle = C.amber; ctx.lineWidth = Math.max(2, 4 * z);
+    const rr = th / 2; ctx.beginPath();
+    ctx.moveTo(-tl / 2 + rr, -th / 2); ctx.lineTo(tl / 2 - rr * .4, -th / 2); ctx.quadraticCurveTo(tl / 2 + rr * .6, 0, tl / 2 - rr * .4, th / 2); ctx.lineTo(-tl / 2 + rr, th / 2); ctx.arc(-tl / 2 + rr, 0, rr, Math.PI / 2, -Math.PI / 2); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#1b2436'; for (let w = 0; w < 3; w++) ctx.fillRect(-tl / 2 + rr + w * (tl / 4.2), -th / 4, tl / 6, th / 2.2);
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(tl / 2 - rr * .2, 0, Math.max(1.5, th / 7), 0, 6.29); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawMini(st) {
+    const mw = mini.width / dpr, mh = mini.height / dpr;
+    mctx.setTransform(dpr, 0, 0, dpr, 0, 0); mctx.clearRect(0, 0, mw, mh);
+    const k = Math.min((mw - 16) / (BOUNDS.x1 - BOUNDS.x0), (mh - 16) / (BOUNDS.y1 - BOUNDS.y0));
+    const ox = (mw - (BOUNDS.x1 - BOUNDS.x0) * k) / 2, oy = (mh - (BOUNDS.y1 - BOUNDS.y0) * k) / 2;
+    const m = (x, y) => [ox + (x - BOUNDS.x0) * k, oy + (y - BOUNDS.y0) * k];
+    mctx.fillStyle = '#0d2240'; const [a] = m(WATER.x0, 0), [b] = m(WATER.x1, 0); mctx.fillRect(a, 0, b - a, mh);
+    mctx.lineCap = 'round'; mctx.lineJoin = 'round';
+    const line = (pts, col, w) => { mctx.strokeStyle = col; mctx.lineWidth = w; mctx.beginPath(); pts.forEach(([x, y], i) => { const [p, q] = m(x, y); i ? mctx.lineTo(p, q) : mctx.moveTo(p, q); }); mctx.stroke(); };
+    branches.forEach(br => line(br.pts, br.color, 1.5));
+    tEdges.forEach(([p, q]) => line([[T[p].x, T[p].y], [T[q].x, T[q].y]], 'rgba(125,147,255,.6)', 1));
+    line(R, 'rgba(255,179,71,.6)', 2.5);
+    const tp = along(st.s); const [tx, ty] = m(tp.x, tp.y);
+    mctx.fillStyle = '#fff'; mctx.beginPath(); mctx.arc(tx, ty, 3.5, 0, 6.29); mctx.fill();
+    const [vx0, vy0] = toWorld(0, 0), [vx1, vy1] = toWorld(W, H); const [p0, q0] = m(vx0, vy0), [p1, q1] = m(vx1, vy1);
+    mctx.strokeStyle = 'rgba(234,240,248,.5)'; mctx.lineWidth = 1; mctx.strokeRect(p0, q0, p1 - p0, q1 - q0);
+  }
+
+  /* ================= SCROLL -> RIDE ================= */
+  const track = $('#track');
+  S.forEach((s, i) => { const sec = document.createElement('section'); sec.id = 's' + i; track.appendChild(sec); });
+  const secH = () => track.firstElementChild.offsetHeight || innerHeight;
+  const goTo = (i) => scrollTo({ top: i * secH(), behavior: reduce ? 'auto' : 'smooth' });
+
+  const hudList = $('#hudList');
+  S.forEach((s, i) => { const li = document.createElement('li'); li.innerHTML = `<button type="button" data-name="${s.short}" aria-label="Go to ${s.name}"></button>`; li.firstChild.addEventListener('click', () => goTo(i)); hudList.appendChild(li); });
+  const dots = $$('button', hudList), fill = $('#fill');
+
+  let shown = -1;
+  const card = $('#card'), cardIn = $('#cardIn'), hero = $('#hero'), ro = $('#ro');
+  function frame(now) {
+    if (document.body.classList.contains('skimming')) { requestAnimationFrame(frame); return; }
+    P = Math.max(0, Math.min(N - 1, scrollY / secH()));
+    const st = rideState(P);
+    const tgt = camTarget(st);
+    const k = reduce ? 1 : .12;
+    cam.x += (tgt.x - cam.x) * k; cam.y += (tgt.y - cam.y) * k; cam.z += (tgt.z - cam.z) * k;
+    draw(now, st);
+    if (!phone) drawMini(st);
+
+    const atStation = st.u === 0 && st.f < .3 ? st.i : (st.f > .94 ? Math.min(N - 1, st.i + 1) : -1);
+    if (atStation !== shown) { shown = atStation; renderCard(atStation); }
+    hero.classList.toggle('off', P > .25);
+    card.classList.toggle('off', shown <= 0);
+
+    const here = Math.round(P);
+    dots.forEach((d, i) => { d.classList.toggle('passed', i < P); d.classList.toggle('here', i === here && Math.abs(P - here) < .3); });
+    const a = dots[0].getBoundingClientRect(), fi = Math.min(N - 1, Math.floor(P)), cur = dots[fi].getBoundingClientRect(), nx = dots[Math.min(N - 1, fi + 1)].getBoundingClientRect();
+    fill.style.width = Math.max(0, lerp(cur.left, nx.left, P - fi) - a.left) + 'px';
+    ro.innerHTML = st.u === 0 && st.f < .38 ? `Stop ${String(st.i + 1).padStart(2, '0')}/${N} · <b>${S[st.i].name}</b>` : `Next · <b>${S[Math.min(N - 1, st.i + 1)].name}</b>`;
+    requestAnimationFrame(frame);
+  }
+
+  /* ================= CARDS ================= */
+  const esc = (t) => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function renderCard(i) {
+    if (i <= 0) return;
+    const s = S[i];
+    cardIn.style.setProperty('--c', s.c);
+    let h = '';
+    if (s.kind === 'edu' || s.kind === 'work') {
+      h = `<p class="when">${s.kind === 'edu' ? 'Education' : 'Industry'} · ${s.when}</p><h2 class="card-h">${s.title}</h2><p class="org">${s.org}</p><ul>${s.pts.map(p => `<li>${p}</li>`).join('')}</ul>${s.chips ? `<div class="chips">${s.chips.map(c => `<span class="chip">${c}</span>`).join('')}</div>` : ''}`;
+    } else if (s.kind === 'returndesk') {
+      h = `<p class="when">Project · Nov 2026 · teal line</p><h2 class="card-h">ReturnDesk</h2><p class="org">Returns and warranty management with customer, employee and admin portals.</p>
+      <div class="stats"><div><b>132</b><span>tests</span></div><div><b>11</b><span>tables</span></div><div><b>7</b><span>SQL charts</span></div></div>
+      <p class="eyebrow" style="margin-top:16px">Live model · return RD-2087</p>
+      <div class="states" id="rstates"></div><div class="log" id="rlog" role="log"></div>
+      <div class="row"><button class="btn go" type="button" id="rNext">Advance status</button><button class="btn" type="button" id="rReject">Reject</button><button class="btn" type="button" id="rReset">New request</button></div>
+      <div class="chips"><span class="chip">React</span><span class="chip">FastAPI</span><span class="chip">PostgreSQL</span><span class="chip">SQLAlchemy</span><span class="chip">Docker</span></div>
+      <div class="row"><a class="btn" href="https://github.com/saxipatel-dev/returndesk" target="_blank" rel="noopener">Read the code ↗</a></div>`;
+    } else if (s.kind === 'flowops') {
+      h = `<p class="when">Project · Nov 2026 · coral line</p><h2 class="card-h">FlowOps</h2><p class="org">Operations and approvals: requests, manager decisions and automatic follow-up tasks.</p>
+      <div class="stats"><div><b>170</b><span>tests</span></div><div><b>3</b><span>roles</span></div><div><b>AA</b><span>WCAG 2.2</span></div></div>
+      <p class="eyebrow" style="margin-top:16px">Live model · request #1042 can be decided once</p>
+      <div class="log" id="flog" role="log"></div>
+      <div class="row"><button class="btn go" type="button" id="fApprove">Approve</button><button class="btn" type="button" id="fAgain">Approve again</button><button class="btn" type="button" id="fRace">Two managers at once</button></div>
+      <div class="chips"><span class="chip">React</span><span class="chip">Node.js</span><span class="chip">Express</span><span class="chip">PostgreSQL</span><span class="chip">Prisma</span><span class="chip">Playwright</span></div>
+      <div class="row"><a class="btn" href="https://github.com/saxipatel-dev/flowops" target="_blank" rel="noopener">Read the code ↗</a></div>`;
+    } else if (s.kind === 'stack') {
+      h = `<p class="when">Interchange · tech district</p><h2 class="card-h">Where each tool ran</h2><p class="org">Pick a tool. It lights up on the map, and the list shows where I used it.</p>
+      <div class="chips" id="techChips">${Object.keys(usedAt).map(t => `<button class="chip" type="button" data-t="${esc(t)}" aria-pressed="false">${t}</button>`).join('')}</div>
+      <p class="eyebrow" style="margin-top:16px" id="techHead"></p><ul class="used" id="techList"></ul>`;
+    } else if (s.kind === 'console') {
+      h = `<p class="when">Console · ask anything</p><h2 class="card-h">Recruiter terminal</h2><p class="org">Type <span class="k">help</span>, or tap a command.</p>
+      <div class="term"><div class="screen" id="screen" role="log"></div><form class="prompt" id="pf" autocomplete="off"><span>$</span><input id="cmd" type="text" spellcheck="false" placeholder="projects" aria-label="Terminal command"></form></div>
+      <div class="chips" id="quick"></div>`;
+    } else if (s.kind === 'contact') {
+      h = `<p class="when">Terminus · from June 2027</p><h2 class="card-h">Next stop: your team</h2><p class="org">I'm looking for Software Developer and Full Stack Developer roles starting June 2027. Email is the fastest way to reach me.</p>
+      <div class="reach"><div><span class="eyebrow">Email</span><span class="v" id="email">patelsaxi0303@gmail.com</span><button type="button" id="copy">Copy</button></div>
+      <a href="https://www.linkedin.com/in/saxi-patel-dev" target="_blank" rel="noopener"><span class="eyebrow">LinkedIn</span><span class="v">in/saxi-patel-dev</span></a>
+      <a href="https://github.com/saxipatel-dev" target="_blank" rel="noopener"><span class="eyebrow">GitHub</span><span class="v">saxipatel-dev</span></a></div>`;
+    }
+    cardIn.innerHTML = h; cardIn.scrollTop = 0;
+    if (s.kind === 'returndesk') initReturnDesk();
+    if (s.kind === 'flowops') initFlowOps();
+    if (s.kind === 'stack') initStack();
+    if (s.kind === 'console') initConsole();
+    if (s.kind === 'contact') initCopy();
+  }
+
+  function initFlowOps() {
+    const log = $('#flog'), btns = ['#fApprove', '#fAgain', '#fRace'].map(x => $(x));
+    let busy = false;
+    const L = (h) => { const p = document.createElement('p'); p.innerHTML = h; log.appendChild(p); log.scrollTop = log.scrollHeight; };
+    const wait = (ms) => new Promise(r => setTimeout(r, reduce ? 0 : ms));
+    const head = ['<span class="k">POST</span> /api/requests/1042/decision', '<span class="g">✓</span> session · CSRF · requireRole(MANAGER)', '<span class="g">✓</span> accessService: reviewer owns #1042', "<span class=\"k\">BEGIN</span>; UPDATE request SET status='APPROVED'\n  WHERE id=1042 AND status='PENDING'"];
+    const win = () => { L('  <span class="g">→ 1 row</span> · INSERT task "Fulfil #1042" · <span class="k">COMMIT</span>'); L('<span class="g">200 OK</span> · approved · follow-up task created'); };
+    async function run(ok, who = '') {
+      for (let i = 0; i < head.length; i++) { L((who && !i ? `<span class="m">${who}</span> ` : '') + head[i]); await wait(260); }
+      if (ok) win(); else { L('  <span class="r">→ 0 rows</span> · <span class="k">ROLLBACK</span>'); L('<span class="r">409 Conflict</span> · already decided'); }
+    }
+    async function guard(fn) { if (busy) return; busy = true; btns.forEach(b => b.disabled = true); log.innerHTML = ''; await fn(); busy = false; btns.forEach(b => { if (document.contains(b)) b.disabled = false; }); }
+    btns[0].onclick = () => guard(() => run(true));
+    btns[1].onclick = () => guard(() => run(false));
+    btns[2].onclick = () => guard(async () => { L('<span class="m">Two managers press Approve within 5 ms…</span>'); await run(true, '[A]'); await run(false, '[B]'); L('<span class="m">Exactly one decision recorded.</span>'); });
+    head.forEach(L); win();
+  }
+
+  function initReturnDesk() {
+    const flow = ['pending_review', 'under_review', 'approved', 'fulfilled', 'closed'];
+    const states = $('#rstates'), log = $('#rlog');
+    let cur = 0, rej = false, clock = 0;
+    const stamp = () => { clock += 9 + Math.floor(Math.random() * 30); const m = 540 + clock; return `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; };
+    const L = (h) => { const p = document.createElement('p'); p.innerHTML = h; log.appendChild(p); log.scrollTop = log.scrollHeight; };
+    const render = () => {
+      states.innerHTML = flow.map((s, i) => { let c = i < cur ? 'done' : i === cur ? 'cur' : ''; if (rej && i === cur) c = 'rej'; return `<div class="state ${c}"><i></i><span>${rej && i === cur ? 'rejected' : ({ pending_review: 'pending', under_review: 'in review' }[s] || s)}</span></div>`; }).join('');
+      $('#rNext').disabled = rej || cur === flow.length - 1; $('#rReject').disabled = rej || flow[cur] !== 'under_review';
+    };
+    const start = () => { cur = 0; rej = false; clock = 0; log.innerHTML = ''; L(`<span class="m">${stamp()}</span> customer opened <span class="k">RD-2087</span> · return · qty 1`); L('<span class="g">✓</span> inside 30-day window · quantity returnable'); render(); };
+    $('#rNext').onclick = () => { if (rej || cur >= flow.length - 1) return; const to = flow[cur + 1]; L('<span class="k">SELECT … FOR UPDATE</span> <span class="m">row locked</span>'); L(`<span class="m">${stamp()}</span> return_events <span class="k">${flow[cur]} → ${to}</span>`); if (to === 'fulfilled') L('<span class="g">refund recorded</span> (simulated)'); L(to === 'closed' ? '<span class="g">COMMIT</span> · closed · customer notified' : '<span class="g">COMMIT</span>'); cur++; render(); };
+    $('#rReject').onclick = () => { if (rej || flow[cur] !== 'under_review') return; L('<span class="r">422</span> a rejection needs a reason'); L('<span class="m">reason:</span> "Damage not covered by warranty"'); L(`<span class="m">${stamp()}</span> return_events <span class="k">under_review → rejected</span> · <span class="g">COMMIT</span>`); rej = true; render(); };
+    $('#rReset').onclick = start;
+    start(); $('#rNext').click();
+  }
+
+  const where = { FlowOps: [C.coral, 'Project · 2026'], ReturnDesk: [C.teal, 'Project · 2026'], 'Logix Built Solutions': [C.amber, 'Internship · 2024'], 'New Tech Infosol': [C.amber, 'Internship · 2023'], Coursework: [C.blue, 'Stevens / GTU'] };
+  const usedAt = {
+    React: ['FlowOps', 'ReturnDesk', 'Logix Built Solutions'], JavaScript: ['FlowOps', 'ReturnDesk', 'Logix Built Solutions'], 'Node.js': ['FlowOps', 'Logix Built Solutions'], Express: ['FlowOps', 'Logix Built Solutions'],
+    Python: ['ReturnDesk', 'Coursework'], FastAPI: ['ReturnDesk'], PostgreSQL: ['FlowOps', 'ReturnDesk'], Prisma: ['FlowOps'], SQLAlchemy: ['ReturnDesk'], 'Tailwind CSS': ['FlowOps', 'ReturnDesk'], Vite: ['FlowOps', 'ReturnDesk'],
+    Docker: ['ReturnDesk', 'FlowOps'], 'GitHub Actions': ['FlowOps', 'ReturnDesk'], Playwright: ['FlowOps', 'ReturnDesk'], Java: ['New Tech Infosol', 'Coursework'], 'Android Studio': ['New Tech Infosol'], Git: ['FlowOps', 'ReturnDesk', 'Logix Built Solutions', 'New Tech Infosol'],
+  };
+  function initStack() {
+    const chips = $('#techChips');
+    const pick = (t) => {
+      pickedTech = t; $$('button', chips).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === t)));
+      const list = usedAt[t]; $('#techHead').textContent = `${t} · used in ${list.length} place${list.length > 1 ? 's' : ''}`;
+      $('#techList').innerHTML = list.map(w => `<li><i style="background:${where[w][0]}"></i>${w}<span>${where[w][1]}</span></li>`).join('');
+    };
+    chips.onclick = (e) => { const b = e.target.closest('button[data-t]'); if (b) pick(b.dataset.t); };
+    pick(usedAt[pickedTech] ? pickedTech : 'React');
+  }
+
+  const CMD = {
+    help: () => 'whoami · projects · flowops · returndesk · experience · skills · education · contact · ride · clear',
+    whoami: () => 'Saxi Patel. Software developer, M.S. Computer Science at Stevens (GPA 3.7, May 2027).\nTwo software development internships. Full-stack: React, Node.js, Python, PostgreSQL.\nOpen to Software Developer and Full Stack roles from June 2027.',
+    projects: () => '<span style="color:#ff7a66">flowops</span>     approvals platform · React, Express, PostgreSQL · 170 tests\n<span class="g">returndesk</span>  returns platform · React, FastAPI, PostgreSQL · 132 tests',
+    flowops: () => 'Employees request, managers approve, approvals create follow-up tasks.\n- 3 roles, permissions enforced server-side from one access service\n- decisions can\'t happen twice (conditional update in a transaction)\n- keyboard-accessible drag-and-drop board, optimistic updates with rollback\n- 170 unit, API, E2E and WCAG 2.2 AA tests in GitHub Actions',
+    returndesk: () => 'Customer, employee and admin portals for returns and warranty claims.\n- eligibility rules enforced by the API\n- append-only audit log in the same transaction\n- row-level locking stops double approvals\n- 4 KPIs + 7 charts computed in PostgreSQL\n- 11-table schema, Docker Compose, 132 tests in CI',
+    experience: () => '<span class="k">2024</span> Software Development Intern · Logix Built Solutions Limited\n     Agile team · React.js + Node.js features · code reviews\n<span class="k">2023</span> Software Development Intern · New Tech Infosol\n     Android components in Java',
+    skills: () => 'JavaScript Python Java SQL · React Vite Tailwind · Node.js Express FastAPI\nPostgreSQL Prisma SQLAlchemy · Vitest Pytest Playwright · Docker GitHub Actions Git',
+    education: () => 'M.S. Computer Science · Stevens · GPA 3.7 · May 2027\nB.E. Computer Engineering · GTU · CGPA 8.94 · May 2024',
+    contact: () => 'patelsaxi0303@gmail.com\nlinkedin.com/in/saxi-patel-dev\ngithub.com/saxipatel-dev',
+    ride: () => { setTimeout(() => goTo(N - 1), 400); return 'Departing for the terminus: your team…'; },
+    'sudo hire saxi': () => '<span class="g">[sudo] permission granted.</span>\nFastest route: patelsaxi0303@gmail.com',
+  };
+  function initConsole() {
+    const screen = $('#screen'), input = $('#cmd');
+    const out = (t, c = '') => { const p = document.createElement('p'); if (c) p.className = c; p.innerHTML = t; screen.appendChild(p); screen.scrollTop = screen.scrollHeight; };
+    const run = (raw) => { const c = raw.trim().toLowerCase().replace(/\s+/g, ' '); if (!c) return; out(esc(raw.trim()), 'cmd'); if (c === 'clear') { screen.innerHTML = ''; return; } const f = CMD[c]; out(f ? f() : `<span class="r">not found:</span> ${esc(c)} · try <span class="k">help</span>`); };
+    $('#pf').onsubmit = (e) => { e.preventDefault(); run(input.value); input.value = ''; };
+    const q = $('#quick'); ['whoami', 'projects', 'experience', 'contact', 'sudo hire saxi'].forEach(c => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = c; b.onclick = () => run(c); q.appendChild(b); });
+    out('whoami', 'cmd'); out(CMD.whoami()); out('type <span class="k">help</span> for every command', 'm');
+  }
+  function initCopy() {
+    $('#copy').onclick = async (e) => { const b = e.currentTarget, em = $('#email'); try { await navigator.clipboard.writeText(em.textContent); b.textContent = 'Copied'; } catch { const r = document.createRange(); r.selectNodeContents(em); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = 'Selected'; } setTimeout(() => b.textContent = 'Copy', 1800); };
+  }
+  $('#toTerm').onclick = () => { goTo(8); setTimeout(() => $('#cmd')?.focus({ preventScroll: true }), reduce ? 50 : 900); };
+  addEventListener('keydown', (e) => {
+    if (/input|textarea/i.test(document.activeElement.tagName)) return;
+    if (e.key === '/') { e.preventDefault(); $('#toTerm').click(); }
+    if (e.key === 'ArrowRight') goTo(Math.min(N - 1, Math.round(P) + 1));
+    if (e.key === 'ArrowLeft') goTo(Math.max(0, Math.round(P) - 1));
+  });
+
+  /* ---------- canvas hover / click ---------- */
+  const tip = $('#tip');
+  cv.addEventListener('mousemove', (e) => {
+    let best = null, bd = 22, bs = null, bsd = 30;
+    tech.forEach(t => { const [x, y] = toScreen(t.x, t.y); const d = Math.hypot(x - e.clientX, y - e.clientY); if (d < bd) { bd = d; best = t; } });
+    S.forEach((s, i) => { if (!i) return; const [x, y] = toScreen(s.x, s.y); const d = Math.hypot(x - e.clientX, y - e.clientY); if (d < bsd) { bsd = d; bs = i; } });
+    hoverTech = best ? best.id : null; hoverStation = bs;
+    cv.style.cursor = best || bs !== null ? 'pointer' : 'default';
+    const show = (x, y, html) => { tip.hidden = false; tip.style.left = x + 'px'; tip.style.top = y + 'px'; tip.innerHTML = html; };
+    if (best) { const [x, y] = toScreen(best.x, best.y); show(x, y, `<b>${best.id}</b>${best.u}`); }
+    else if (bs !== null) { const [x, y] = toScreen(S[bs].x, S[bs].y); show(x, y, `<b>${S[bs].name}</b>Click to ride here`); }
+    else tip.hidden = true;
+  });
+  cv.addEventListener('mouseleave', () => { hoverTech = null; hoverStation = null; tip.hidden = true; });
+  cv.addEventListener('click', () => { if (hoverStation !== null) goTo(hoverStation); else if (hoverTech) { pickedTech = hoverTech; goTo(7); } });
+
+  /* ---------- skim view ---------- */
+  const skim = $('#skim');
+  skim.innerHTML = `<div class="w">
+    <div><p class="eyebrow">Software Developer · Full Stack · Open to roles from June 2027</p><h1 style="margin-top:12px">Saxi Patel</h1><p class="meta" style="margin-top:12px">Jersey City, NJ · patelsaxi0303@gmail.com · <a href="https://www.linkedin.com/in/saxi-patel-dev" target="_blank" rel="noopener">LinkedIn</a> · <a href="https://github.com/saxipatel-dev" target="_blank" rel="noopener">GitHub</a></p></div>
+    <div><h2>Projects</h2>
+      <div class="item"><h3><a href="https://github.com/saxipatel-dev/flowops" target="_blank" rel="noopener">FlowOps</a> · operations and approval workflow platform</h3><p class="meta">React · Node.js · Express · PostgreSQL · Prisma · Playwright</p><ul><li>Role-based access for 3 roles, enforced server-side from a single access service.</li><li>Approvals can't be decided twice: conditional updates inside PostgreSQL transactions.</li><li>Keyboard-accessible drag-and-drop board with optimistic updates and rollback.</li><li>170 unit, API, end-to-end and WCAG 2.2 AA tests in GitHub Actions.</li></ul></div>
+      <div class="item"><h3><a href="https://github.com/saxipatel-dev/returndesk" target="_blank" rel="noopener">ReturnDesk</a> · returns and warranty management platform</h3><p class="meta">React · FastAPI · Python · PostgreSQL · SQLAlchemy · Docker</p><ul><li>Return and warranty rules enforced by the API, with an append-only audit log in the same transaction.</li><li>Row-level locking prevents duplicate approvals under concurrency.</li><li>Admin analytics: 4 KPIs and 7 charts calculated in PostgreSQL, with CSV export.</li><li>11-table schema with Alembic migrations; 132 tests in GitHub Actions.</li></ul></div>
+    </div>
+    <div><h2>Experience</h2>
+      ${[S[3], S[2]].map(s => `<div class="item"><h3>${s.title} · ${s.org.split(' · ')[0]}</h3><p class="meta">${s.when} · Gujarat, India</p><ul>${s.pts.map(p => `<li>${p}</li>`).join('')}</ul></div>`).join('')}
+    </div>
+    <div><h2>Education</h2>
+      <div class="item"><h3>M.S. in Computer Science · Stevens Institute of Technology</h3><p class="meta">Hoboken, NJ · Sep 2025 – May 2027 (expected) · GPA 3.7/4.0</p></div>
+      <div class="item"><h3>B.E. in Computer Engineering · Gujarat Technological University</h3><p class="meta">Gujarat, India · Nov 2020 – May 2024 · CGPA 8.94/10</p></div>
+    </div>
+    <div><h2>Skills</h2><p>JavaScript, Python, Java, SQL, HTML, CSS · React, Vite, Tailwind CSS · Node.js, Express, FastAPI, REST APIs · PostgreSQL, Prisma, SQLAlchemy · Vitest, Pytest, Playwright · Docker, GitHub Actions, Git · Agile/Scrum</p></div>
+  </div>`;
+  const skimBtn = $('#skimBtn');
+  skimBtn.onclick = () => {
+    const on = !document.body.classList.contains('skimming');
+    document.body.classList.toggle('skimming', on); skim.hidden = !on;
+    skimBtn.setAttribute('aria-pressed', String(on)); skimBtn.textContent = on ? 'Ride the map' : 'Skim view';
+    scrollTo(0, 0);
+  };
+
+  /* ---------- clock + boot ---------- */
+  const clk = $('#clk');
+  const tick = () => { try { clk.textContent = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/New_York' }).format(new Date()); } catch {} };
+  tick(); setInterval(tick, 15000);
+  size(); addEventListener('resize', size);
+  Object.assign(cam, camTarget(rideState(0)));
+  if (/^#s\d$/.test(location.hash)) setTimeout(() => goTo(+location.hash.slice(2)), 60);
+  requestAnimationFrame(frame);
+})();
+</script>
+</html>
